@@ -4,7 +4,7 @@ contract Lotto {
     uint nonce;
     uint lastRand;
     address admin;
-    address smartLotto;
+    address public smartLotto;
     mapping(uint=>address) public users;
     uint public countUsers;
 
@@ -31,8 +31,7 @@ contract Lotto {
         smartLotto = contractAddress;
     }
 
-    // todo: clean
-    function getBalance() external view returns(uint) {
+    function getStatus() external view returns(uint) {
         return address(this).balance;
     }
 
@@ -62,7 +61,7 @@ contract Lotto {
     }
 
     function applyLottery() internal {
-        while(address(this).balance > amount) {
+        while(address(this).balance >= amount) {
             uint id = getRandom() + 1;
             if(users[id] != address(0)) {
                 if(!address(uint160(users[id])).send(amount))

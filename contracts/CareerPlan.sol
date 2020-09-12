@@ -1,8 +1,8 @@
 pragma solidity ^0.5.10;
 
 contract CareerPlan {
-    address owner;
-    address smartLotto;
+    address admin;
+    address public smartLotto;
 
     struct LevelStatus {
         uint balance;
@@ -19,8 +19,8 @@ contract CareerPlan {
         _;
     }
 
-    modifier restricted () {
-        require(smartLotto == msg.sender, 'restricted');
+    modifier restricted() {
+        require(msg.sender == admin, "restricted");
         _;
     }
 
@@ -28,16 +28,21 @@ contract CareerPlan {
     event UserEarned(address indexed _user, uint indexed _userId, uint8 indexed _level, uint _amount);
 
     constructor() public {
-        owner = msg.sender;
+        admin = msg.sender;
         levelAmountToDistribute[1] = 1044873 * 1e6;
         levelAmountToDistribute[2] = 5433342 * 1e6;
         levelAmountToDistribute[3] = 10448735 * 1e6;
         levelAmountToDistribute[4] = 33435952 * 1e6;
         levelAmountToDistribute[5] = 83589880 * 1e6;
+//        levelAmountToDistribute[1] = 50 * 1e6;
+//        levelAmountToDistribute[2] = 100 * 1e6;
+//        levelAmountToDistribute[3] = 200 * 1e6;
+//        levelAmountToDistribute[4] = 300 * 1e6;
+//        levelAmountToDistribute[5] = 400 * 1e6;
     }
 
-    function setSmartLottoAddress(address _adr) external restricted {
-        smartLotto = _adr;
+    function setSmartLottoAddress(address contractAddress) external restricted {
+        smartLotto = contractAddress;
     }
 
     function addToBalance() external payable {
@@ -60,7 +65,7 @@ contract CareerPlan {
 
     function applyDistribution() internal {
         for(uint8 i = 1; i <= 5; i++) {
-            if(levelStatus[i].balance >= levelAmountToDistribute[i]) {
+            if(levelStatus[i].balance >= levelAmountToDistribute[i] && levelStatus[i].usersAddress.length > 0) {
                 sendDistribution(i);
             }
         }
@@ -76,5 +81,10 @@ contract CareerPlan {
             levelStatus[i].balance -= amount;
             emit UserEarned(receiver, levelStatus[_level].usersIds[receiver], _level, amount);
         }
+    }
+
+    function getStatusOfLevel(uint8 level) external view returns(uint status, uint goal) {
+        status = levelStatus[level].balance;
+        goal = levelAmountToDistribute[level];
     }
 }

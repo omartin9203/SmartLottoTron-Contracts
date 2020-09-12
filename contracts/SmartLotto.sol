@@ -43,10 +43,10 @@ contract SmartLotto {
     }
 
     uint nextId = 1;
-    address payable externalAddress;
-    address payable externalFeeAddress;
+    address externalAddress;
+    address externalFeeAddress;
     mapping(address=>User) public users;
-    mapping(uint=>address payable) public idLookup;
+    mapping(uint=>address) public idLookup;
 
     CareerPlan careerPlan;
     struct PlanRequirements {
@@ -56,10 +56,15 @@ contract SmartLotto {
     mapping(uint8 => PlanRequirements) levelRequirements;
     Lotto lottery;
 
+    struct Distribution {
+        uint user;
+        uint lotto;
+        uint careerPlan;
+        uint owner;
+        uint fee;
+    }
+    mapping(uint8 => Distribution) boxDistribution;
     mapping(uint8 => uint) public boxesValues;
-    mapping(uint8 => uint) public boxes70PtgValues;
-    mapping(uint8 => uint) public boxesExternalValues;
-    mapping(uint8 => uint) public boxesPlanValues;
 
     modifier validSponsor(address _sponsor) {
         require(users[_sponsor].id != 0, "This sponsor does not exists");
@@ -86,26 +91,53 @@ contract SmartLotto {
         _;
     }
 
-    constructor(address payable _externalAddress, address payable _careerPlanAddress, address payable _lotteryAddress, address payable _externalFeeAddress) public {
+    constructor(address _externalAddress, address _careerPlanAddress, address _lotteryAddress, address _externalFeeAddress) public {
         externalAddress = _externalAddress;
         externalFeeAddress = _externalFeeAddress;
         lottery = Lotto(_lotteryAddress);
+        initializeValues();
         initializeCareerPlan(_careerPlanAddress);
         User storage root = users[externalAddress];
         root.id = nextId++;
         idLookup[root.id] = externalAddress;
         for (uint8 i = 1; i <= 14; i++) {
-            boxesValues[i] = 250 * 1e6 * (2**(i - 1));
-            boxes70PtgValues[i] = 175 * 1e6 * (2**(i - 1));
-            boxesExternalValues[i] = 52.5 * 1e6 * (2**(i - 1));
-            boxesPlanValues[i] = 22.5 * 1e6 * (2**(i - 1));
-            
             root.directBoxes[i].purchased = true;
             root.teamBoxes[i].purchased = true;
         }
     }
 
-    function initializeCareerPlan(address payable _careerPlanAddress) internal {
+    function initializeValues() internal {
+        boxesValues[1] = 250 trx;
+        boxesValues[2] = 500 trx;
+        boxesValues[3] = 1000 trx;
+        boxesValues[4] = 2000 trx;
+        boxesValues[5] = 4000 trx;
+        boxesValues[6] = 8000 trx;
+        boxesValues[7] = 16000 trx;
+        boxesValues[8] = 32000 trx;
+        boxesValues[9] = 64000 trx;
+        boxesValues[10] = 128000 trx;
+        boxesValues[11] = 256000 trx;
+        boxesValues[12] = 512000 trx;
+        boxesValues[13] = 1024000 trx;
+        boxesValues[14] = 2048000 trx;
+        boxDistribution[1] = Distribution({user: 175 trx, lotto: 52.5 trx, careerPlan: 6.75 trx, owner: 15.525 trx, fee: 0.225 trx});
+        boxDistribution[2] = Distribution({user: 350 trx, lotto: 105 trx, careerPlan: 13.5 trx, owner: 31.05 trx, fee: 0.45 trx});
+        boxDistribution[3] = Distribution({user: 700 trx, lotto: 210 trx, careerPlan: 27 trx, owner: 62.1 trx, fee: 0.9 trx});
+        boxDistribution[4] = Distribution({user: 1400 trx, lotto: 420 trx, careerPlan: 54 trx, owner: 124.2 trx, fee: 1.8 trx});
+        boxDistribution[5] = Distribution({user: 2800 trx, lotto: 840 trx, careerPlan: 108 trx, owner: 248.4 trx, fee: 3.6 trx});
+        boxDistribution[6] = Distribution({user: 5600 trx, lotto: 1680 trx, careerPlan: 216 trx, owner: 496.8 trx, fee: 7.2 trx});
+        boxDistribution[7] = Distribution({user: 11200 trx, lotto: 3360 trx, careerPlan: 432 trx, owner: 993.6 trx, fee: 14.4 trx});
+        boxDistribution[8] = Distribution({user: 22400 trx, lotto: 6720 trx, careerPlan: 864 trx, owner: 1987.2 trx, fee: 28.8 trx});
+        boxDistribution[9] = Distribution({user: 44800 trx, lotto: 13440 trx, careerPlan: 1728 trx, owner: 3974.4 trx, fee: 57.6 trx});
+        boxDistribution[10] = Distribution({user: 89600 trx, lotto: 26880 trx, careerPlan: 3456 trx, owner: 7948.8 trx, fee: 115.2 trx});
+        boxDistribution[11] = Distribution({user: 179200 trx, lotto: 53760 trx, careerPlan: 6912 trx, owner: 15897.6 trx, fee: 230.4 trx});
+        boxDistribution[12] = Distribution({user: 358400 trx, lotto: 107520 trx, careerPlan: 13824 trx, owner: 31795.2 trx, fee: 460.8 trx});
+        boxDistribution[13] = Distribution({user: 716800 trx, lotto: 215040 trx, careerPlan: 27648 trx, owner: 63590.4 trx, fee: 921.6 trx});
+        boxDistribution[14] = Distribution({user: 1433600 trx, lotto: 430080 trx, careerPlan: 55296 trx, owner: 127180.8 trx, fee: 1843.2 trx});
+    }
+
+    function initializeCareerPlan(address _careerPlanAddress) internal {
         careerPlan = CareerPlan(_careerPlanAddress);
         levelRequirements[1].countReferrers = 10;
         levelRequirements[1].purchasedBoxes = 3;
@@ -117,6 +149,17 @@ contract SmartLotto {
         levelRequirements[4].purchasedBoxes = 12;
         levelRequirements[5].countReferrers = 60;
         levelRequirements[5].purchasedBoxes = 14;
+//        //todo: change
+//        levelRequirements[1].countReferrers = 0;
+//        levelRequirements[1].purchasedBoxes = 2;
+//        levelRequirements[2].countReferrers = 0;
+//        levelRequirements[2].purchasedBoxes = 3;
+//        levelRequirements[3].countReferrers = 0;
+//        levelRequirements[3].purchasedBoxes = 4;
+//        levelRequirements[4].countReferrers = 0;
+//        levelRequirements[4].purchasedBoxes = 5;
+//        levelRequirements[5].countReferrers = 0;
+//        levelRequirements[5].purchasedBoxes = 6;
     }
 
     function() external payable {
@@ -168,6 +211,7 @@ contract SmartLotto {
             if(users[users[msg.sender].sponsor].directBoxes[_box].purchased) {
                 users[users[msg.sender].sponsor].directBoxes[_box].partnersCount++;
                 verifyLevelOfUser(users[msg.sender].sponsor);
+//                verifyLevelOfUser(msg.sender);
             }
             emit UpgradeStatusEvent(msg.sender, sponsorResult, _box, true);
         } else {
@@ -181,6 +225,7 @@ contract SmartLotto {
             if(users[users[msg.sender].sponsor].teamBoxes[_box].purchased) {
                 users[users[msg.sender].sponsor].teamBoxes[_box].partnersCount++;
                 verifyLevelOfUser(users[msg.sender].sponsor);
+//                verifyLevelOfUser(msg.sender);
             }
 
             emit UpgradeStatusEvent(msg.sender, sponsorResult, _box, false);
@@ -192,7 +237,7 @@ contract SmartLotto {
         if (users[user].levelCareerPlan >= 5) return;
         uint8 level = users[user].levelCareerPlan + 1;
         PlanRequirements memory requirements = levelRequirements[level];
-        for(uint8 i; i < requirements.purchasedBoxes; i++) {
+        for(uint8 i = 1; i <= requirements.purchasedBoxes; i++) {
             if(!users[user].directBoxes[i].purchased || !users[user].teamBoxes[i].purchased) return;
             if(users[user].directBoxes[i].partnersCount < requirements.countReferrers
                 || users[user].teamBoxes[i].partnersCount < requirements.countReferrers) return;
@@ -203,7 +248,7 @@ contract SmartLotto {
 
     function verifyRequirementsForLottery(address user) internal {
         if (users[user].activeInLottery) return;
-        for(uint8 i; i < 3; i++) {
+        for(uint8 i = 1; i <= 3; i++) {
             if(!users[user].directBoxes[i].purchased || !users[user].teamBoxes[i].purchased)
                 return;
         }
@@ -337,26 +382,16 @@ contract SmartLotto {
 
     function applyDistribution(address _from, address _to, uint8 _box, bool _isSmartDirect) private {
         (address receiver, bool haveMissed) = getReceiver(_from, _to, _box, _isSmartDirect, false);
-        uint box70Ptg = percentage(boxesValues[_box], 70);
-        uint boxSystemAmount = boxesValues[_box] - box70Ptg;
-        uint lotteryAmount = percentage(boxSystemAmount, 70);
-        uint restAmount = boxSystemAmount - lotteryAmount;
-        uint externalAmount = percentage(restAmount, 69);
-        uint externalFeeAmount = percentage(restAmount, 1);
-        if(!address(uint160(receiver)).send(box70Ptg))
-            address(uint160(receiver)).transfer(box70Ptg);
-        if(!externalAddress.send(externalAmount))
-            externalAddress.transfer(externalAmount);
-        if(!externalFeeAddress.send(externalFeeAmount))
-            externalFeeAddress.transfer(externalFeeAmount);
-        lottery.addToRaffle.value(lotteryAmount)();
-        careerPlan.addToBalance.value(restAmount - externalAmount - externalFeeAmount)();
+        if(!address(uint160(receiver)).send(boxDistribution[_box].user))
+            address(uint160(receiver)).transfer(boxDistribution[_box].user);
+        if(!address(uint160(externalAddress)).send(boxDistribution[_box].owner))
+            address(uint160(externalAddress)).transfer(boxDistribution[_box].owner);
+        if(!address(uint160(externalFeeAddress)).send(boxDistribution[_box].fee))
+            address(uint160(externalFeeAddress)).transfer(boxDistribution[_box].fee);
+        lottery.addToRaffle.value(boxDistribution[_box].lotto)();
+        careerPlan.addToBalance.value(boxDistribution[_box].careerPlan)();
         if (haveMissed)
             emit SentExtraEvent(_from, receiver, _box, _isSmartDirect);
-    }
-
-    function percentage(uint amount, uint8 ptg) internal pure returns(uint) {
-        return amount * ptg / 100;
     }
 
     function getReceiver(address _from, address _to, uint8 _box, bool _isSmartDirect, bool _haveMissed) private  returns(address, bool) {
