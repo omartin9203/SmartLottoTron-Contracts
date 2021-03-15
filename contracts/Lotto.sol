@@ -3,7 +3,7 @@ pragma solidity ^0.5.10;
 contract Lotto {
     uint nonce;
     uint lastRand;
-    address admin;
+    address payable admin;
     address public smartLotto;
     mapping(uint=>address) public users;
     uint public countUsers;
@@ -37,12 +37,12 @@ contract Lotto {
 
     function getRandom() internal returns(uint) {
         uint rand = uint(keccak256(abi.encodePacked(
-            nonce,
-            lastRand,
-            now,
-            block.difficulty,
-            msg.sender)
-        )) % countUsers;
+                nonce,
+                lastRand,
+                now,
+                block.difficulty,
+                msg.sender)
+            )) % countUsers;
         nonce++;
         lastRand = rand;
         return rand;
@@ -61,7 +61,7 @@ contract Lotto {
     }
 
     function applyLottery() internal {
-        while(address(this).balance >= amount) {
+        if(address(this).balance >= amount) {
             uint id = getRandom() + 1;
             if(users[id] != address(0)) {
                 if(!address(uint160(users[id])).send(amount))
@@ -69,5 +69,9 @@ contract Lotto {
                 emit UserWonLotteryEvent(users[id]);
             }
         }
+    }
+
+    function withdrawLostTRXFromBalance() public restricted {
+        admin.transfer(address(this).balance);
     }
 }
